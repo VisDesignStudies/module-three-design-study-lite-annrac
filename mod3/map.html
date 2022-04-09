@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Module 3</title>
+
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/base/jquery-ui.css">
+        <style>
+            .wrapper {
+                display: flex;
+                width: 100%;
+            }
+
+            #content {
+                width: calc(100% - 50px);
+                padding: 40px;
+                min-height: 100vh;
+                transition: all 0.3s;
+                position: absolute;
+                top: 0;
+                right: 0;
+            }
+
+            pre {
+                color: rgb(137, 173, 197)
+            }
+
+            #content.active {
+                width: 100%;
+            }
+
+            a {
+                color: rgb(101, 142, 170);
+            }
+            a.hover {
+                color: rgb(76, 122, 161);
+            }
+
+            .line {
+                fill: none;
+                stroke: steelblue;
+                stroke-width: 2px;
+            }
+
+
+            .bar {
+                fill: #5f89ad;
+            }
+
+            .axis {
+                font-size: 13px;
+            }
+
+            .axis path,
+            .axis line {
+                fill: none;
+                display: none;
+            }
+
+            .label {
+                font-size: 13px;
+            }
+
+            div.tooltip {	
+                position: absolute;			
+                text-align: center;			
+                width: 100px;					
+                height: 80px;					
+                padding: 2px;				
+                font: 12px;
+                color: #252525;
+                background-color: rgb(216, 216, 216);
+                border: 0px;		
+                border-radius: 0px;			
+                pointer-events: none;			
+            }
+
+            div.classification_tooltip {
+                position: absolute;			
+                text-align: center;			
+                width: 100px;					
+                height: 50px;					
+                padding: 2px;				
+                font: 12px;
+                color: #3d3d3d;
+                border: 0px;		
+                border-radius: 0px;			
+                pointer-events: none;		
+            }
+
+
+            .grid line {
+                stroke: rgb(90, 90, 90);
+                stroke-opacity: 0.7;
+                shape-rendering: crispEdges;
+            }
+
+            .grid path {
+                stroke-width: 0;
+            }
+        
+        </style>
+    
+    </head>
+    <body>
+
+        <div class="wrapper">
+            <div id="content">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h3>Energy Analytics Dashboard</h3>
+                        <p>By Annie, William, Ian</p>
+                    </div>
+                    <div class="col-md-2">
+                        <p>Energy Source</p>
+                        <select id="energytype">
+                            <option value="Coal">Coal</option>
+                            <option value="Distillate Fuel Oil">Distillate Fuel Oil</option>
+                            <option value="Geothermal">Geothermal</option>
+                            <option value="Hydropower">Hydropower</option>
+                            <option value="Kerosene">Kerosene</option>
+                            <option value="Natural Gas">Natural Gas</option>
+                            <option value="Other Petroleum Products">Other Petroleum Products</option>
+                            <option value="Petroleum">Petroleum</option>
+                            <option value="Solar">Solar</option>
+                            <option value="Wind">Wind</option>
+                            <option value="Wood">Wood</option>
+                        </select>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div id="series1"></div>
+                        <div id="series2"></div>
+                    </div>
+                    <div class="col-md-5">
+                        <div id="series3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.min.js"></script>
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+        <script src="https://d3js.org/topojson.v1.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+        <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
+        <script src="SeriesChart.js"></script>
+
+        <script>
+
+            $( document ).ready(function() {
+
+                let stateCount = 4
+                let defaultEnergy = 'Coal'
+
+                renderRenewables(stateCount)
+
+                renderAll(stateCount, defaultEnergy)
+
+                $('#energytype').change(function() {
+                    defaultEnergy = this.value
+                    renderAll(stateCount, defaultEnergy)
+                });
+
+            })
+
+            function renderRenewables(states){
+
+                d3.csv('Renewables_Consumption_Per_Year.csv', function(data){
+                    
+                    let records = {}
+                    data.forEach(row => {
+
+                        for(let column in row){
+                            if(typeof records[column] == 'undefined'){
+                                records[column] = []
+                            }
+                            records[column].push({
+                                time: row['Year'],
+                                value: row[column]
+                            })
+                        }
+                        
+                    })
+
+                    delete records['Total']
+                    delete records['Year']
+                    console.log(records)
+
+                    let chart_data = {
+                        tag: 'series3',
+                        series: records,
+                        title: `Renewable Energy Consumption (Total, All States)`,
+                        margin: {top: 30, right: 140, bottom: 50, left: 100},
+                        width: 600,
+                        colors: ["#7eb0d5", "#beb9db", "#fdcce5", "#8bd3c7"]
+                        //y_label: 'Consumption',
+                        //x_label: 'years'
+                    }
+
+                    let chart1 = new SeriesChart(chart_data)
+                    chart1.init()
+                    records = chart1.filterTopStates(states)
+                    chart1.assignSeriesColors()
+                    //chart1.clear()
+                    chart1.renderGrid()
+                    chart1.appendLegend()
+                    chart1.drawSeries()
+
+                })
+
+            }
+
+            function renderAll(states, energy){
+
+                let svg = d3.select("#series1")
+                svg.selectAll('*').remove();
+
+                let svg2 = d3.select("#series2")
+                svg2.selectAll('*').remove();
+
+                d3.csv('energy.csv', function(data){
+
+                    //console.log(data[1])
+
+                    let records = {}
+                    data.forEach(row => {
+                        if(typeof records[row['State']] == 'undefined') records[row['State']] = []
+                        records[row['State']].push({
+                            time: row['Year'],
+                            value: row[`Consumption.Industrial.${energy}`],
+                            price: row[`Price.Industrial.${energy}`],
+                            state: row['State']
+                        })
+                    });
+
+                    let chart_data = {
+                        tag: 'series1',
+                        series: records,
+                        title: `${energy} Consumption & Price (Top Four States)`,
+                        margin: {top: 30, right: 140, bottom: 50, left: 100},
+                        width: 680,
+                        y_label: 'Consumption',
+                        //x_label: 'years'
+                    }
+
+                    let chart1 = new SeriesChart(chart_data)
+                    chart1.init()
+                    records = chart1.filterTopStates(states)
+                    chart1.assignSeriesColors()
+                    //chart1.clear()
+                    chart1.renderGrid()
+                    chart1.appendLegend()
+                    chart1.drawSeries()
+
+
+                    /////////////
+
+                    //reset our value to the price
+                    for(let state in records){
+                        records[state].forEach(row => {
+                            delete row.value
+                            row.value = row.price
+                        });
+                    }
+
+                    chart_data = {
+                        tag: 'series2',
+                        series: records,
+                        //title: 'Petroleum',
+                        y_label: 'Price',
+                        x_label: 'years'
+                    }
+
+                    let chart2 = new SeriesChart(chart_data)
+                    chart2.init()
+                    //chart2.clear()
+                    chart2.assignSeriesColors()
+                    chart2.renderGrid()
+                    chart2.drawSeries()
+
+                })
+
+            }
+
+    
+
+
+
+
+
+
+/*
+            d3.csv('energy.csv', function(data){
+
+                let records = {}
+                data.forEach(row => {
+                    if(typeof records[row['State']] == 'undefined') records[row['State']] = []
+                    records[row['State']].push({
+                        time: row['Year'],
+                        value: row[`Price.Industrial.Petroleum`],
+                        state: row['State']
+                    })
+                });
+
+                //take average
+                let classifications = []
+                
+
+                var classhist = new ClassificationHistogram({
+                    tag: 'series3',
+                    classifications: records,
+                    title: 'Average Consumption'
+                })
+
+                classhist.init()
+                classhist.renderChart()
+                classhist.renderClassifcationPercentages()
+
+            })
+*/
+        </script>
+        
+</html>
